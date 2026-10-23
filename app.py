@@ -18,15 +18,21 @@ period_map = {"1Y": "1y", "3Y": "3y", "5Y": "5y", "10Y": "10y"}
 def load_and_process_data(period):
     tickers = ['^FTSE', '^FCHI', 'EURGBP=X']
     raw_data = yf.download(tickers, period=period)['Close']
-    data = raw_data.dropna().copy()
+    
+    # PATCH: Convert to UTC and strip time zones so London and Paris align perfectly
+    raw_data.index = pd.to_datetime(raw_data.index, utc=True).tz_localize(None)
+    
+    # Forward-fill to cover overlapping bank holidays, then drop remaining empty rows
+    data = raw_data.ffill().dropna().copy()
+    
     data['CAC40_GBP'] = data['^FCHI'] * data['EURGBP=X']
+    
     returns = pd.DataFrame()
     returns['FTSE100'] = data['^FTSE'].pct_change()
     returns['CAC40_EUR'] = data['^FCHI'].pct_change()
     returns['CAC40_GBP'] = data['CAC40_GBP'].pct_change()
-    return data.dropna(), returns.dropna().pct_change()
+    
     return data.dropna(), returns.dropna()
-
 data, returns = load_and_process_data(period_map[time_horizon])
 
 def calculate_var_cvar(returns_series, confidence):
