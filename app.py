@@ -17,13 +17,14 @@ period_map = {"1Y": "1y", "3Y": "3y", "5Y": "5y", "10Y": "10y"}
 @st.cache_data
 def load_and_process_data(period):
     tickers = ['^FTSE', '^FCHI', 'EURGBP=X']
-    raw_data = yf.download(tickers, period=period)['Adj Close']
+    raw_data = yf.download(tickers, period=period)['Close']
     data = raw_data.dropna().copy()
     data['CAC40_GBP'] = data['^FCHI'] * data['EURGBP=X']
     returns = pd.DataFrame()
     returns['FTSE100'] = data['^FTSE'].pct_change()
     returns['CAC40_EUR'] = data['^FCHI'].pct_change()
     returns['CAC40_GBP'] = data['CAC40_GBP'].pct_change()
+    return data.dropna(), returns.dropna().pct_change()
     return data.dropna(), returns.dropna()
 
 data, returns = load_and_process_data(period_map[time_horizon])
